@@ -12,15 +12,14 @@ app.get('/', (req, res) => {
     console.log('on Get');
 });
 
-app.post('/',(req, res) => {
+app.post('/webhook',(req, res) => {
     let body = req.body;
-    let response = {
-        status: "200",
-        body: body
-    }
-    res.send(response);
+    // let response = {
+    //     status: "200",
+    //     body: body
+    // }
+    //res.send(response);
     console.log(body);
-    
     
 });
 
