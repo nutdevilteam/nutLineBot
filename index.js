@@ -28,7 +28,7 @@ app.post('/webhook',(req, res) => {
     console.log(req.body);
 
     if(Object.keys(req.body).length !== 0){
-        let events = req.body.events;
+        let events = req.body.events[0];
         // ------- Param --------
         let replyToken = events.replyToken;
         let type = events.type;
@@ -58,7 +58,7 @@ app.post('/webhook',(req, res) => {
             console.log(`No Reply`);
                 break;
         }
-        console.log(`out Switch case `);
+        //console.log(`out Switch case `);
         
 
         //res.send({status: 'OK JA'});
