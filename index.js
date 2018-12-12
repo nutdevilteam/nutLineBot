@@ -42,17 +42,24 @@ app.post('/webhook',(req, res) => {
                     type: 'text',
                     text: 'Nut ma law Ja ^O^'
                 };
-                replyMessage(message,replyToken);
+                replyMessage(replyToken,message);
+                console.log(`Reply Message success`);
+                
                 break;
             // event add friend
             case 'follow':
+            console.log(`Reply follow success`);
                 break;
             // event unfriend
             case 'unfollow':
+            console.log(`Reply unfollow success`);
                 break;
             default:
+            console.log(`No Reply`);
                 break;
         }
+        console.log(`out Switch case `);
+        
 
         //res.send({status: 'OK JA'});
     }else{
