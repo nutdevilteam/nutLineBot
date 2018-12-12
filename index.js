@@ -30,7 +30,7 @@ app.post('/webhook',(req, res) => {
     if(Object.keys(req.body).length !== 0){
         let events = req.body.events;
         // ------- Param --------
-        let replyToken = req.body.replyToken;
+        let replyToken = events.replyToken;
         let type = events.type;
         // -------------
 
@@ -53,8 +53,6 @@ app.post('/webhook',(req, res) => {
             default:
                 break;
         }
-
-
 
         //res.send({status: 'OK JA'});
     }else{
