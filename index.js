@@ -1,6 +1,7 @@
 // Require Package
 const express = require('express');
 const body = require('body-parser');
+const mysql = require('mysql');
 const line = require('@line/bot-sdk');
 // ---------
 
@@ -14,6 +15,15 @@ const client = new line.Client({
   });
 // -------------
 
+// connect mysql
+const conn = mysql.createConnection({  // conn = connection
+  host     : 'db.ucconnect.co.th',
+  user     : 'root',
+  password : 'ucdb1pw',
+  port : 3333,
+  database : 'line'
+});
+
   
 
   
@@ -23,45 +33,81 @@ app.get('/', (req, res) => {
     console.log('on Get');
 });
 
-app.post('/webhook',(req, res) => {
-    console.log(`POST Body :`);
+app.get('/db', (req, res) => {
+    // console.log(conn);
+    conn.query('SELECT * from line_user_info', function (error, results, fields) {
+    if (error) throw error;
+        console.log('The solution is: ', results);
+        let data = {
+            status: 'connect_success',
+            data:results
+        }
+        res.json(data);
+    });
+});
+
+app.post('/push', (req, res) => {
     console.log(req.body);
+    // if(req.body.length == 0){
+    //     res.json({status: 'warring', message: 'Please send some data !!'});
+    // }
+    pushMessage(req.body.userId, req.body.message);
+});
+
+app.post('/webhook',async (req, res) => {
+    // console.log(`POST Body :`);
+    // console.log(req.body);
 
     if(Object.keys(req.body).length !== 0){
         let events = req.body.events[0];
         // ------- Param --------
         let replyToken = events.replyToken;
-        let type = events.type;
-        // -------------
+        let type = events.message.type;
+        let message = events.message.text;
+        let timeStamp = events.timestamp;
+        let userId = events.source.userId
+   
+        let checkUser = await checkUserById(userId);
+        var re = new RegExp("\R:");
+        console.log(re.test(message))
+        if(re.test(message)){
+            let resCreateUser = await createUser(message, userId);
+            if(checkUser.length > 0) {
+                replyMessage(replyToken, `ท่านได้สมัครสมาชิกเรียบร้อยแล้ว`)
+            } else{
+                if(resCreateUser.status == 'error'){
+                    replyMessage(replyToken, resCreateUser.message)
+                }else{
+                    replyMessage(replyToken, resCreateUser.message)
+                }
+            }
 
-        
-        switch (type) {
-            // event meassage text, sticker, picture
-            case 'message':  
-                const message = {
-                    type: 'text',
-                    text: 'Nut ma law Ja ^O^'
+        }else{
+            if(checkUser.length === 0){
+                replyMessage(replyToken, `คุณยังไม่ได้สมัครการใช้งาน Line Bot กรุณาพิมพ์ "R:firname:lastname" เพื่อทำการสมัครการใช้งาน`)
+            }else {
+                let getMessageReplys = await getMessageReply();
+           
+                let result = '';
+                let num = 0;
+                for(let i = 0; i < getMessageReplys.length; i++){
+                    num++;
+                    if(message.trim() == getMessageReplys[i].request_message.trim()){
+                        result = getMessageReplys[i].reply_message;
+                        break;
+                    }else if(message == '--help'){
+                        result = result + `${num}. ${getMessageReplys[i].request_message}\n`;
+                    }else{
+                        console.log('in')
+                        result = `กรุณาพิมพ์ keyword ให้ตรงด้วยจ้า สามารถดู keyword ทั้งหมดได้โดยการพิมพ์ "--help"`;
+                    }
+                    
                 };
-                replyMessage(replyToken,message);
-                console.log(`Reply Message success`);
-                
-                break;
-            // event add friend
-            case 'follow':
-            console.log(`Reply follow success`);
-                break;
-            // event unfriend
-            case 'unfollow':
-            console.log(`Reply unfollow success`);
-                break;
-            default:
-            console.log(`No Reply`);
-                break;
-        }
-        //console.log(`out Switch case `);
-        
+                replyMessage(replyToken, result.trim())
+            }
 
-        //res.send({status: 'OK JA'});
+        }
+
     }else{
         console.log(`Bed Request (400) Body empty`);
         res.status(400).send({errorMessage: 'Body is empty'});
@@ -73,7 +119,11 @@ app.post('/webhook',(req, res) => {
 // --- function -------
 
 const replyMessage = (replyToken, message) =>{
-        client.replyMessage(replyToken, message)
+        const resMessage = {
+            type: 'text',
+            text: message
+        };
+        client.replyMessage(replyToken, resMessage)
         .then(() => {
         console.log(`---------- Reply is Success ----------`)
         })
@@ -92,6 +142,74 @@ const pushMessage = (userId, message) =>{
     });
 }
 
+const getMessageReply = () => {
+    return new Promise((resolve, reject) => {
+        conn.query('SELECT * from line_reply_message where used = ?', ['1'], (error, results, fields)=>{
+            if (error){
+                reject(new Error("Error!" + error));
+            }else {
+                resolve(results);
+            }
+        });
+    });
+}
+
+const createUser = (userinfo, userId) =>{
+    let arr = userinfo.split(":");
+    let json = {}
+    if(arr[1] == undefined || arr[1] == ''){
+        return {status:"error", message: "กรุณากรอก R:firname:lastname"}
+    }else if(arr[2] == undefined || arr[2] == ''){
+        return {status:"error", message: "กรุณากรอก lastname"}
+    }else {
+         return new Promise((resolve, reject) => {
+            let insertData = {
+                line_user_id : userId,
+                first_name : arr[1],
+                last_name : arr[2]
+            }
+            conn.query('INSERT INTO line_user_info SET ?', insertData, function (error, results, fields) {
+                if (error){
+                    reject(new Error("Error!" + error));
+                }else {
+                    resolve({status:"success", message: "แจ่มมาก"});
+                }
+            });
+        });
+    }
+}
+
+// const insertLogMessage = (data) => {
+//     return new Promise((resolve, reject) => {
+//         let insertData = {
+//             line_user_id : userId,
+//             first_name : arr[1],
+//             last_name : arr[2]
+//         }
+//         conn.query('INSERT INTO line_user_info SET ?', insertData, function (error, results, fields) {
+//             if (error){
+//                 reject(new Error("Error!" + error));
+//             }else {
+//                 resolve({status:"success", message: "แจ่มมาก"});
+//             }
+//         });
+//     });
+// }
+
+const checkUserById = (userId) => {
+    return new Promise((resolve, reject) => {
+        conn.query('SELECT * from line_user_info where line_user_id = ?', [userId], (error, results, fields)=>{
+            if (error){
+                reject(new Error("Error!" + error));
+            }else {
+                resolve(results);
+            }
+        });
+    });
+}
+
+
+// run server
 app.listen(port,() =>{
     console.log(`Server listening on port ${port}`);
     
