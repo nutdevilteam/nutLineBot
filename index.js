@@ -17,11 +17,11 @@ const client = new line.Client({
 
 // connect mysql
 const conn = mysql.createConnection({  // conn = connection
-  host     : 'db.ucconnect.co.th',
-  user     : 'root',
-  password : 'ucdb1pw',
-  port : 3333,
-  database : 'line'
+  host     : 'us-cdbr-iron-east-02.cleardb.net',
+  user     : 'be30473f5ae74c',
+  password : 'e7ea640a',
+  port : 3306,
+  database : 'heroku_4cdf996bba47287'
 });
 
   
@@ -67,25 +67,25 @@ app.post('/webhook',async (req, res) => {
         let timeStamp = events.timestamp;
         let userId = events.source.userId
    
-        let checkUser = await checkUserById(userId);
-        var re = new RegExp("\R:");
-        console.log(re.test(message))
-        if(re.test(message)){
-            let resCreateUser = await createUser(message, userId);
-            if(checkUser.length > 0) {
-                replyMessage(replyToken, `ท่านได้สมัครสมาชิกเรียบร้อยแล้ว`)
-            } else{
-                if(resCreateUser.status == 'error'){
-                    replyMessage(replyToken, resCreateUser.message)
-                }else{
-                    replyMessage(replyToken, resCreateUser.message)
-                }
-            }
+        // let checkUser = await checkUserById(userId);
+        // var re = new RegExp("\R:");
+        // console.log(re.test(message))
+        // if(re.test(message)){
+        //     let resCreateUser = await createUser(message, userId);
+        //     if(checkUser.length > 0) {
+        //         replyMessage(replyToken, `ท่านได้สมัครสมาชิกเรียบร้อยแล้ว`)
+        //     } else{
+        //         if(resCreateUser.status == 'error'){
+        //             replyMessage(replyToken, resCreateUser.message)
+        //         }else{
+        //             replyMessage(replyToken, resCreateUser.message)
+        //         }
+        //     }
 
-        }else{
-            if(checkUser.length === 0){
-                replyMessage(replyToken, `คุณยังไม่ได้สมัครการใช้งาน Line Bot กรุณาพิมพ์ "R:firname:lastname" เพื่อทำการสมัครการใช้งาน`)
-            }else {
+        // }else{
+        //     if(checkUser.length === 0){
+        //         replyMessage(replyToken, `คุณยังไม่ได้สมัครการใช้งาน Line Bot กรุณาพิมพ์ "R:firname:lastname" เพื่อทำการสมัครการใช้งาน`)
+        //     }else {
                 let getMessageReplys = await getMessageReply();
            
                 let result = '';
@@ -99,14 +99,16 @@ app.post('/webhook',async (req, res) => {
                         result = result + `${num}. ${getMessageReplys[i].request_message}\n`;
                     }else{
                         console.log('in')
-                        result = `กรุณาพิมพ์ keyword ให้ตรงด้วยจ้า สามารถดู keyword ทั้งหมดได้โดยการพิมพ์ "--help"`;
+                        let items = [`ตอนนี้น้องกำลังพัฒนาอยู่นะ ขอโทษด้วยครับ`, `keyword ไม่ตรงอ่าครับ T-T`, `น้องไม่เข้าใจ T-T`];
+                        // result = `กรุณาพิมพ์ keyword ให้ตรงด้วยจ้า สามารถดู keyword ทั้งหมดได้โดยการพิมพ์ "--help"`
+                        result = items[Math.floor(Math.random()*items.length)];
                     }
                     
                 };
                 replyMessage(replyToken, result.trim())
-            }
+            // }
 
-        }
+        // }
 
     }else{
         console.log(`Bed Request (400) Body empty`);
